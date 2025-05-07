@@ -6,7 +6,7 @@ Crowdfunding has gained significant traction as a way for companies to raise fun
 
 **Objective**
 
-The goal is to predict whether a fundraising project will meet its target or not using a dataset of ICO projects, and identify factors influencing their success.
+The goal is to predict whether a fundraising project will meet its target or not using a dataset of ICO projects and identify factors influencing their success.
 
 **Methodology**
 
