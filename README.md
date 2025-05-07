@@ -1,8 +1,12 @@
 **Predicting Success of ICO Fundraiser Campaigns**
+
+
 **Introduction**
+
 Crowdfunding has gained significant traction as a way for companies to raise funds, and Initial Coin Offerings (ICOs) have emerged as a prominent method for such fundraising, involving the issuance of digital coins. This report explores the prediction of ICO fundraising success using machine learning techniques.
 
 **Objective**
+
 The goal is to predict whether a fundraising project will meet its target or not using a dataset of ICO projects, and identify factors influencing their success.
 
 **Methodology**
