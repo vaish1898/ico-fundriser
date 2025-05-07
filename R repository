@@ -1,0 +1,239 @@
+# Step 1: Load the dataset
+df <- read.csv("datasetnew.csv", stringsAsFactors = TRUE, encoding = 'UTF-8')
+# Step 2: Basic Exploration
+# Display the first few rows of the dataset
+head(df)
+# Check dimensions of the dataset
+dim(df)
+# Check the data type of each variable
+for (variable_name in colnames(df)) {
+  variable_type <- class(df[[variable_name]])
+  print(paste("Variable:", variable_name, "- Type:", variable_type))
+}
+summary(df)
+#step3:summary statistic
+# Summary statistics for numerical features
+summary_stats_numerical <- summary(df[, c("rating", "priceUSD", "teamSize", "coinNum", "minInvestment", "distributedPercentage")])
+print(summary_stats_numerical)
+# Frequency count for categorical features
+summary_stats_categorical <- apply(df[, c("success", "countryRegion", "hasVideo", "hasGithub", "hasReddit", "platform")], table)
+print(summary_stats_categorical)
+#step4:preprocessing
+#Impute missing values with the median for the priceUSD column
+# First, check the number of missing values in priceUSD
+missing_priceUSD <- sum(is.na(df$priceUSD))
+# If there are missing values, proceed with median imputation
+if (missing_priceUSD > 0) {
+  # Compute the median of priceUSD
+  median_priceUSD <- median(df$priceUSD, na.rm = TRUE)
+  # Impute missing values with the median
+  df$priceUSD[is.na(df$priceUSD)] <- median_priceUSD
+   # Verify that missing values have been imputed
+  updated_missing_priceUSD <- sum(is.na(df$priceUSD))
+  cat("Number of missing values before imputation:", missing_priceUSD, "\n")
+  cat("Number of missing values after imputation:", updated_missing_priceUSD, "\n")
+} else {
+  cat("No missing values in the priceUSD column.\n")
+}
+#teamsize# Check if there are missing values in the teamSize column
+missing_teamSize <- sum(is.na(df$teamSize))
+if (missing_teamSize > 0) {
+  cat("Number of missing values before imputation:", missing_teamSize, "\n")
+  # Calculate the median of teamSize
+  teamSize_median <- median(df$teamSize, na.rm = TRUE)
+  # Impute missing values with the median
+  df$teamSize[is.na(df$teamSize)] <- teamSize_median
+   # Verify that missing values have been imputed
+  updated_missing_teamSize <- sum(is.na(df$teamSize))
+  cat("Number of missing values after imputation:", updated_missing_teamSize, "\n")
+} else {
+  cat("No missing values in the teamSize column.\n")
+}
+# Load required library
+library(ggplot2)
+# Create a histogram for teamSize
+ggplot(df, aes(x = teamSize)) +
+  geom_histogram(binwidth = 5, fill = "skyblue", color = "black") +
+  labs(title = "Distribution of Team Size", x = "Team Size", y = "Frequency")
+# Create a boxplot for teamSize
+ggplot(df, aes(y = teamSize)) +
+  geom_boxplot(fill = "lightgreen", color = "black") +
+  labs(title = "Boxplot of Team Size", y = "Team Size")
+#Success
+# Convert "N" to 0 and "Y" to 1 in the success column
+df$success <- factor(df$success, levels = c("N", "Y"), labels = c(0, 1))
+#DIS%
+# Check for missing values in the "distributedPercentage" column
+missing_values <- sum(is.na(df$distributedPercentage))
+# If there are missing values, print a message indicating so
+if (missing_values > 0) {
+  print(paste("The 'distributedPercentage' column has", missing_values, "missing values."))
+} else {
+  print("No missing values found in the 'distributedPercentage' column.")
+}
+# Calculate the Interquartile Range (IQR) and identify outliers
+Q1 <- quantile(df$distributedPercentage, 0.25)
+Q3 <- quantile(df$distributedPercentage, 0.75)
+IQR <- Q3 - Q1
+lower_bound <- Q1 - 1.5 * IQR
+upper_bound <- Q3 + 1.5 * IQR
+outliers <- df$distributedPercentage[df$distributedPercentage < lower_bound | df$distributedPercentage > upper_bound]
+# If there are outliers, print a message indicating so
+if (length(outliers) > 0) {
+  print(paste("The 'distributedPercentage' column has", length(outliers), "outliers."))
+} else {
+  print("No outliers found in the 'distributedPercentage' column.")
+}
+# Winsorization function to replace outliers with the nearest non-outlier value
+winsorize <- function(x, trim = 0.05) {
+  q <- quantile(x, probs = c(trim, 1 - trim), na.rm = TRUE)
+  x[x < q[1]] <- q[1]
+  x[x > q[2]] <- q[2]
+  x
+}
+# Apply Winsorization to the distributedPercentage column
+df$distributedPercentage <- winsorize(df$distributedPercentage)
+# Calculate the Interquartile Range (IQR) after replacing outliers
+Q1_new <- quantile(df$distributedPercentage, 0.25)
+Q3_new <- quantile(df$distributedPercentage, 0.75)
+IQR_new <- Q3_new - Q1_new
+# Define the lower and upper bounds for outliers after replacing them
+lower_bound_new <- Q1_new - 1.5 * IQR_new
+upper_bound_new <- Q3_new + 1.5 * IQR_new
+# Identify outliers after replacing them
+outliers_new <- df$distributedPercentage[df$distributedPercentage < lower_bound_new | df$distributedPercentage > upper_bound_new]
+# Print the outliers
+print(outliers_new)
+#COUNTRY # Find rows where Country is NA
+na_country_rows <- df[is.na(df$countryRegion), ]
+# Print the rows with NA in the Country column
+print(na_country_rows)
+# Check levels of the countryRegion factor
+levels(df$countryRegion)
+# Convert empty strings to NA in the countryRegion column
+df$countryRegion[df$countryRegion == ""] <- NA
+# Check for missing values in the countryRegion column after conversion
+sum(is.na(df$countryRegion))
+# Remove rows with missing values in the countryRegion column
+df <- df[complete.cases(df$countryRegion), ]
+# Check for missing values after deletion
+sum(is.na(df$countryRegion))
+#startenddate
+# Check the original format of startDate and endDate columns
+head(df$startDate)
+head(df$endDate)
+# install.packages("lubridate")
+library(lubridate)
+# Convert startDate and endDate columns to date format using lubridate
+df$startDate <- dmy(df$startDate)  # Assuming dates are in "DD/MM/YYYY" format
+df$endDate <- dmy(df$endDate)
+# Check if there are any NAs after conversion
+sum(is.na(df$startDate))
+sum(is.na(df$endDate))
+# Verify that the conversion was successful
+str(df)
+#Normalization
+# Define the recipe for min-max scaling, excluding binary indicator columns
+library(recipes)
+# Define the recipe for scaling
+scaling_recipe <- recipe(~ rating + coinNum + minInvestment, data = df) %>%
+  step_normalize(all_predictors())
+# Prepare the recipe
+prepared_recipe <- prep(scaling_recipe)
+# Apply the prepared recipe to your dataframe
+df_scaled <- bake(prepared_recipe, new_data = df)
+# Check the scaled dataframe
+head(df_scaled)
+# Perform one-hot encoding for Country Region and Platform columns
+df <- cbind(df, model.matrix(~ countryRegion + platform - 1, data = df))
+# Remove the original categorical columns
+df <- df[, !names(df) %in% c("countryRegion", "platform")]
+# Check the updated dataframe
+head(df)
+# Drop unnecessary columns
+df <- df[, !names(df) %in% c("ID", "brandSlogan", "countryRegion", "platform")]
+#classbalancing
+# Load necessary library for oversampling
+library(ROSE)
+# Check class imbalance
+table(df$success)
+# Calculate the desired oversampled size as a multiple of the original majority class size
+majority_class_size <- max(table(df$success))
+desired_oversampled_size <- 2 * majority_class_size  
+# Perform oversampling
+oversampled_data <- ovun.sample(success ~ ., data = df, method = "over", N = desired_oversampled_size)$data
+# Check the class distribution after oversampling
+table(oversampled_data$success)
+# data splitting
+library(caret)
+# Set the seed for reproducibility
+set.seed(123)
+# Split the dataset into training and testing sets
+train_index <- createDataPartition(oversampled_data$success, p = 0.8, list = FALSE)
+train_data <- oversampled_data[train_index, ]
+test_data <- oversampled_data[-train_index, ]
+# Check the dimensions of the training and testing sets
+dim(train_data)
+dim(test_data)
+#Random Forest
+# Install the randomForest package if not already installed
+install.packages("randomForest")
+# Load the randomForest package
+library(randomForest)
+#Train the Random Forest model
+rf_model <- randomForest(success ~ ., data = train_data)
+# Make predictions for the Random Forest model
+rf_predictions <- predict(rf_model, newdata = test_data)
+# Calculate evaluation metrics for the Random Forest model
+rf_confusion_matrix <- confusionMatrix(rf_predictions, test_data$success)
+rf_accuracy <- rf_confusion_matrix$overall['Accuracy']
+rf_precision <- rf_confusion_matrix$byClass['Pos Pred Value']
+rf_recall <- rf_confusion_matrix$byClass['Sensitivity']
+rf_f1_score <- rf_confusion_matrix$byClass['F1']
+# Print evaluation metrics for the Random Forest model
+cat("Random Forest Evaluation Metrics:\n")
+cat("Accuracy:", rf_accuracy, "\n")
+cat("Precision:", rf_precision, "\n")
+cat("Recall:", rf_recall, "\n")
+cat("F1 Score:", rf_f1_score, "\n\n")
+# SVM
+# Install the caret package if not already installed
+install.packages("caret")
+# Load the caret package
+library(caret)
+library(e1071)
+# Train the SVM model
+svm_model <- svm(success ~ ., data = train_data, kernel = "radial")
+# Make predictions for the SVM model
+svm_predictions <- predict(svm_model, newdata = test_data)
+# Calculate evaluation metrics for the SVM model
+svm_confusion_matrix <- confusionMatrix(svm_predictions, test_data$success)
+svm_accuracy <- svm_confusion_matrix$overall['Accuracy']
+svm_precision <- svm_confusion_matrix$byClass['Pos Pred Value']
+svm_recall <- svm_confusion_matrix$byClass['Sensitivity']
+svm_f1_score <- svm_confusion_matrix$byClass['F1']
+# Print evaluation metrics for the SVM model
+cat("SVM Evaluation Metrics:\n")
+cat("Accuracy:", svm_accuracy, "\n")
+cat("Precision:", svm_precision, "\n")
+cat("Recall:", svm_recall, "\n")
+cat("F1 Score:", svm_f1_score, "\n\n")
+# Analyze Support Vectors
+support_vectors <- svm_model$index
+num_support_vectors <- length(support_vectors)
+cat("Number of support vectors:", num_support_vectors, "\n")
+#cross-validation
+# Set the seed for reproducibility
+set.seed(123)
+# Define the number of folds for cross-validation
+num_folds <- 5  # You can adjust this value as needed
+# Perform k-fold cross-validation for Random Forest
+rf_control <- trainControl(method = "cv", number = num_folds)
+rf_cv <- train(success ~ ., data = train_data, method = "rf", trControl = rf_control)
+# Perform k-fold cross-validation for radial SVM
+svm_radial_control <- trainControl(method = "cv", number = num_folds)
+svm_radial_cv <- train(success ~ ., data = train_data, method = "svmRadial", trControl = svm_radial_control)
+# Print cross-validation results
+print(rf_cv)
+print(svm_radial_cv)
+
